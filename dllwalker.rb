@@ -7,8 +7,51 @@
 # | Refer to the LICENSE.txt file included.               |
 # +-------------------------------------------------------+
 
+# === Initial definitions ===
+
 ORIGIN_FILE, *DLL_DIRS = ARGV
 # ^ First arg, All other args in an array
+
+def error(message)
+  abort("\e[31mFAIL: \e[0m#{message}")
+end
+
+
+# === Initial validity checks ===
+
+winedump_exists = system('which winedump > /dev/null 2>&1')
+if (!winedump_exists)
+  error('Command \'winedump\' is missing. Have you installed wine tools?')
+end
+
+if (ORIGIN_FILE.nil?)
+  error('No file path provided.')
+end
+
+if (!File.file?(ORIGIN_FILE))
+  error("Provided path doesn\'t contain a file: \'#{ORIGIN_FILE}\'.")
+end
+
+is_windows_binary = system("file -L \'#{ORIGIN_FILE}\' | grep PE > /dev/null 2>&1")
+if (!is_windows_binary)
+  error("Provided file isn't a Windows binary: \'#{ORIGIN_FILE}\'.")
+end
+
+if (DLL_DIRS.empty?)
+  error('No DLL directories provided.')
+end
+
+DLL_DIRS.each do |dir|
+  if (!Dir.exist?(dir))
+    if (File.file?(dir))
+      error("Provided DLL directory is actually a file: \'#{dir}\'.")
+    end
+    error("DLL directory doesn\'t exist: \'#{dir}\'.")
+  end
+end
+
+
+# === Main functionality ===
 
 $final_dll_list = []
 $checked_dll_list = []
